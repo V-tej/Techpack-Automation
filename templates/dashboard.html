@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Techpack Automator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="bg-animated"></div>
+    
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="icon">🤖</span>
+                <h1>Techpack <span>Automator</span></h1>
+            </div>
+            <p class="subtitle">AI-Powered Artwork Extraction & Cataloging</p>
+        </header>
+
+        <main class="dashboard-grid">
+            <!-- Upload Section -->
+            <section class="glass-panel upload-section">
+                <h2>New Processing Job</h2>
+                
+                <form id="uploadForm">
+                    <div class="input-group">
+                        <label for="brand">Brand Name</label>
+                        <input type="text" id="brand" name="brand" placeholder="e.g. NIKE" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="style">Style Code</label>
+                        <input type="text" id="style" name="style" placeholder="e.g. SS25-001" required>
+                    </div>
+
+                    <div class="drop-zone" id="dropZone">
+                        <div class="drop-content">
+                            <span class="drop-icon">📄</span>
+                            <p>Drag & Drop Techpack PDF</p>
+                            <span class="or">or</span>
+                            <button type="button" class="btn-secondary" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+                            <input type="file" id="fileInput" name="file" accept=".pdf" hidden required>
+                        </div>
+                        <div class="file-info" id="fileInfo" style="display: none;">
+                            <span class="file-name"></span>
+                            <button type="button" class="btn-remove" id="removeFile">✕</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="submitBtn" disabled>
+                        <span>Start Processing</span>
+                        <div class="spinner" id="btnSpinner" style="display: none;"></div>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Status & Results Section -->
+            <section class="glass-panel results-section">
+                <div class="status-header">
+                    <h2>Live Status</h2>
+                    <span class="badge badge-idle" id="statusBadge">Waiting</span>
+                </div>
+
+                <div class="logs-container" id="logsContainer">
+                    <div class="empty-state" id="logsEmpty">
+                        Upload a techpack to see live processing logs.
+                    </div>
+                    <ul class="log-list" id="logList"></ul>
+                </div>
+
+                <div class="results-container" id="resultsContainer" style="display: none;">
+                    <h3>Extraction Summary</h3>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="statPages">0</div>
+                            <div class="stat-label">Total Pages</div>
+                        </div>
+                        <div class="stat-card highlight">
+                            <div class="stat-value" id="statClassified">0</div>
+                            <div class="stat-label">Artworks Found</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-value" id="statUnclassified">0</div>
+                            <div class="stat-label">Unclassified</div>
+                        </div>
+                    </div>
+
+                    <div class="categories-list" id="categoriesList">
+                        <!-- Category cards injected here via JS -->
+                    </div>
+                    
+                    <div class="action-bar">
+                        <p class="output-path">Output: <span id="outputPath">...</span></p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

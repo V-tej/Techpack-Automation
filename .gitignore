@@ -1,0 +1,26 @@
+# Environment
+.env
+venv/
+__pycache__/
+*.pyc
+
+# Credentials (NEVER commit these)
+credentials/
+*.json
+!config/artwork_keywords.json
+
+# Output files
+output/
+logs/
+uploads/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test samples
+samples/
