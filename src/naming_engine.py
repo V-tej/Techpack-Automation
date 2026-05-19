@@ -8,8 +8,10 @@ Handles:
 - Summary report generation
 """
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from loguru import logger
 from dataclasses import dataclass, field
 from datetime import datetime

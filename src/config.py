@@ -57,10 +57,11 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 ARTWORK_CATEGORIES = {
     "print": {
         "keywords": [
-            "print", "screen print", "dtf", "sublimation", "digital print",
+            "screen print", "dtf", "sublimation", "digital print",
             "discharge print", "pigment print", "heat transfer print",
             "plastisol", "water-based print", "foil print", "flock print",
-            "puff print"
+            "puff print", "hd print", "print artwork", "print col",
+            "all over print", "placement print", "~aop",
         ],
         "code_prefix": "ART",
         "folder_name": "Prints"
@@ -69,7 +70,8 @@ ARTWORK_CATEGORIES = {
         "keywords": [
             "embroidery", "embroidered", "3d puff", "flat embroidery",
             "chain stitch", "satin stitch", "cross stitch", "applique",
-            "emb", "embr"
+            "puffed embroidery", "tuft embroidery",
+            "embroidery in cotton", "embroidery in poly",
         ],
         "code_prefix": "EMB",
         "folder_name": "Embroidery"
@@ -78,7 +80,10 @@ ARTWORK_CATEGORIES = {
         "keywords": [
             "woven label", "main label", "size label", "care label",
             "brand label", "neck label", "woven tag", "damask label",
-            "satin label", "taffeta label"
+            "satin label", "taffeta label", "washcare label",
+            "wash care label", "branding label", "flag label",
+            "loop label", "content label", "printed neck tape",
+            "tracibility label", "party tag", "wash care",
         ],
         "code_prefix": "WL",
         "folder_name": "Woven_Labels"
@@ -86,16 +91,19 @@ ARTWORK_CATEGORIES = {
     "heat_transfer": {
         "keywords": [
             "heat transfer", "silicone transfer", "reflective transfer",
-            "vinyl transfer", "ht", "htv", "heat seal"
+            "vinyl transfer", "~htv", "heat seal",
+            "heat transfer label", "silicon label",
+            "ht tape", "ht proportional",
         ],
         "code_prefix": "HT",
         "folder_name": "Heat_Transfers"
     },
     "patch_badge": {
         "keywords": [
-            "patch", "badge", "rubber patch", "tpu patch", "leather patch",
+            "rubber patch", "tpu patch", "leather patch",
             "pvc patch", "metal badge", "woven patch", "chenille patch",
-            "silicone badge"
+            "silicone badge", "silicon branding", "silicon badge",
+            "moon patch", "branding badge",
         ],
         "code_prefix": "SB",
         "folder_name": "Patches_Badges"
@@ -103,12 +111,35 @@ ARTWORK_CATEGORIES = {
     "packaging": {
         "keywords": [
             "hangtag", "hang tag", "polybag", "sticker", "barcode",
-            "packaging", "price tag", "care tag", "tissue paper",
-            "packaging artwork"
+            "packaging artwork", "price tag", "tissue paper",
+            "poly cover", "packing tape", "carton box",
+            "inserter", "crocodile clip", "~bopp",
         ],
         "code_prefix": "PKG",
         "folder_name": "Packaging"
-    }
+    },
+    "bill_of_materials": {
+        "keywords": [
+            "bill of materials", "~bom",
+        ],
+        "code_prefix": "BOM",
+        "folder_name": "BOM"
+    },
+    "design_sheet": {
+        "keywords": [
+            "design sheet", "working sketch", "style description",
+        ],
+        "code_prefix": "DS",
+        "folder_name": "Design_Sheets"
+    },
+    "spec_sheet": {
+        "keywords": [
+            "spec sheet", "spec detail", "reference sheet",
+            "measurement sheet",
+        ],
+        "code_prefix": "SP",
+        "folder_name": "Spec_Sheets"
+    },
 }
 
 # ============================================

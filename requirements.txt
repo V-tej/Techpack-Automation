@@ -1,25 +1,31 @@
 # Core PDF Processing
-PyMuPDF==1.24.0
-pypdf==4.3.0
+PyMuPDF==1.22.5
+pypdf==3.17.4
 
 # Google APIs
-google-api-python-client==2.131.0
-google-auth-httplib2==0.2.0
-google-auth-oauthlib==1.2.0
-google-cloud-vision==3.7.2
-gspread==6.1.2
+google-api-python-client==2.108.0
+google-auth-httplib2==0.1.1
+google-auth-oauthlib==0.8.0
+google-cloud-vision==3.4.5
+gspread==5.12.4
 
 # OpenAI (GPT-4 Vision)
-openai==1.35.0
+openai==1.6.1
 
 # Image Processing
-Pillow==10.3.0
+Pillow==9.5.0
 
 # Utilities
-python-dotenv==1.0.1
+python-dotenv==0.21.1
 PyYAML==6.0.1
 rich==13.7.1
 click==8.1.7
 
 # Logging
 loguru==0.7.2
+
+# Web Dashboard
+flask==2.2.5
+
+# Test PDF generation
+fpdf2==2.8.3

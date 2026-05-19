@@ -77,19 +77,68 @@ class PDFProcessor:
         return pages_data
 
     def detect_artwork_type(self, text: str) -> list:
-        """Detect artwork type(s) from text using keyword matching."""
+        """Detect artwork type(s) from text using improved keyword matching.
+        
+        Keywords prefixed with ~ use word-boundary regex matching to prevent
+        false positives (e.g., 'ht' matching inside 'BRIGHT').
+        Multi-word keywords are weighted higher than single-word ones.
+        """
+        import re
         text_lower = text.lower()
+        # Normalize whitespace for better matching
+        text_normalized = re.sub(r'\s+', ' ', text_lower)
         detections = []
 
         for category_name, category_info in self.categories.items():
             keywords_found = []
+            weighted_score = 0.0
+
             for keyword in category_info["keywords"]:
-                if keyword.lower() in text_lower:
-                    keywords_found.append(keyword)
+                kw = keyword.lower()
+
+                # ~ prefix means use word-boundary matching (for short keywords)
+                if kw.startswith("~"):
+                    kw_clean = kw[1:]
+                    pattern = r'\b' + re.escape(kw_clean) + r'\b'
+                    if re.search(pattern, text_normalized):
+                        keywords_found.append(kw_clean)
+                        weighted_score += 1.0
+                else:
+                    if kw in text_normalized:
+                        keywords_found.append(kw)
+                        # Multi-word keywords get higher weight
+                        word_count = len(kw.split())
+                        if word_count >= 3:
+                            weighted_score += 3.0
+                        elif word_count == 2:
+                            weighted_score += 2.0
+                        else:
+                            weighted_score += 1.0
 
             if keywords_found:
-                confidence = len(keywords_found) / len(category_info["keywords"])
-                confidence = min(confidence * 1.5, 1.0)
+                # Confidence based on weighted score relative to category size
+                total_keywords = len(category_info["keywords"])
+                confidence = weighted_score / (total_keywords * 1.0)
+                confidence = min(confidence * 2.0, 1.0)
+
+                # Boost if page heading/title matches the category
+                first_line = text_normalized[:120].strip()
+                heading_terms = {
+                    "print": ["print artwork", "artwork: front", "artwork: back", "artwork detail"],
+                    "embroidery": ["embroidery", "artwork: sleeve embroidery"],
+                    "woven_label": ["woven label", "label spec", "washcare label", "wash care"],
+                    "heat_transfer": ["heat transfer"],
+                    "patch_badge": ["patch", "badge detail"],
+                    "packaging": ["packaging artwork", "packaging"],
+                    "bill_of_materials": ["bill of materials"],
+                    "design_sheet": ["design sheet", "working sketch"],
+                    "spec_sheet": ["spec sheet", "spec detail", "reference sheet"],
+                }
+                for term in heading_terms.get(category_name, []):
+                    if term in first_line:
+                        confidence = min(confidence + 0.3, 1.0)
+                        break
+
                 detections.append({
                     "category": category_name,
                     "code_prefix": category_info["code_prefix"],

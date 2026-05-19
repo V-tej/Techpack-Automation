@@ -4,13 +4,19 @@ CLI Entry Point — Techpack Artwork Automation
 Command-line interface using Click.
 """
 
+import os
+import sys
+
+# Fix Unicode on Windows legacy console
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+
 import click
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-console = Console()
+console = Console(force_terminal=True)
 
 
 @click.group()
