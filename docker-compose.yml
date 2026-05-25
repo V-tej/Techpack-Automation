@@ -1,0 +1,13 @@
+services:
+  techpack-app:
+    build: .
+    container_name: techpack_automation
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - /app/venv  # Prevent local venv from overwriting container's dependencies
+    environment:
+      - FLASK_ENV=development
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

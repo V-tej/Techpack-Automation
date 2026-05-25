@@ -21,9 +21,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsContainer = document.getElementById('resultsContainer');
     const statPages = document.getElementById('statPages');
     const statClassified = document.getElementById('statClassified');
+    const statImages = document.getElementById('statImages');
     const statUnclassified = document.getElementById('statUnclassified');
     const categoriesList = document.getElementById('categoriesList');
     const outputPath = document.getElementById('outputPath');
+
+    // Enhanced elements
+    const headerInfo = document.getElementById('headerInfo');
+    const artworkBody = document.getElementById('artworkBody');
+    const vendorsSection = document.getElementById('vendorsSection');
+    const vendorTags = document.getElementById('vendorTags');
 
     let currentFile = null;
     let pollInterval = null;
@@ -64,15 +71,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Please upload a PDF file.');
                 return;
             }
+            // Limit to 100MB
+            const maxSize = 100 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('File is too large. Maximum allowed size is 100MB.');
+                return;
+            }
             currentFile = file;
             
-            // Auto-fill inputs if empty
+            // Auto-fill brand if empty
             if(!brandInput.value) brandInput.value = "BRAND";
-            if(!styleInput.value) {
-                // Try to extract style from filename
-                const nameMatch = file.name.match(/^([a-zA-Z0-9-]+)/);
-                styleInput.value = nameMatch ? nameMatch[1].toUpperCase() : "STYLE001";
-            }
 
             dropContent.style.display = 'none';
             fileInfo.style.display = 'flex';
@@ -83,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Remove selected file
     removeFileBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent opening file dialog
+        e.stopPropagation();
         currentFile = null;
         fileInput.value = '';
         dropContent.style.display = 'block';
@@ -91,9 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
         checkFormValidity();
     });
 
-    // Form Validation
+    // Form Validation — style is optional now (auto-detected)
     function checkFormValidity() {
-        if (currentFile && brandInput.value.trim() && styleInput.value.trim()) {
+        if (currentFile && brandInput.value.trim()) {
             submitBtn.disabled = false;
         } else {
             submitBtn.disabled = true;
@@ -123,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('file', currentFile);
         formData.append('brand', brandInput.value.trim());
-        formData.append('style', styleInput.value.trim());
+        formData.append('style', styleInput.value.trim() || 'STYLE');
 
         try {
             const response = await fetch('/api/upload', {
@@ -131,16 +139,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
-            const data = await response.json();
-            
-            if (response.ok) {
-                // Start polling for status
-                pollJobStatus(data.job_id);
+            if (response.status === 413) {
+                handleError('File is too large for the server. Maximum allowed size is 100MB.');
+                return;
+            }
+
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = await response.json();
+                if (response.ok) {
+                    pollJobStatus(data.job_id);
+                } else {
+                    handleError(data.error || 'Upload failed');
+                }
             } else {
-                handleError(data.error || 'Upload failed');
+                handleError(`Server error (${response.status})`);
             }
         } catch (error) {
-            handleError('Network error occurred');
+            handleError('Network error occurred. The file might be too large.');
         }
     });
 
@@ -192,17 +208,75 @@ document.addEventListener('DOMContentLoaded', () => {
         statPages.textContent = result.total_pages;
         statClassified.textContent = result.classified;
         statUnclassified.textContent = result.unclassified;
+        statImages.textContent = result.images_extracted || 0;
+
+        // Show header info if available
+        if (result.header && (result.header.style_no || result.header.buyer)) {
+            headerInfo.style.display = 'block';
+            document.getElementById('infoStyle').textContent = result.header.style_no || '—';
+            document.getElementById('infoBuyer').textContent = result.header.buyer || '—';
+            document.getElementById('infoSeason').textContent = result.header.season || '—';
+            document.getElementById('infoGarment').textContent = result.header.garment_type || '—';
+        } else {
+            headerInfo.style.display = 'none';
+        }
         
-        // Update categories grid
+        // Update categories grid — COLOR CODED
         categoriesList.innerHTML = '';
-        for (const [cat, count] of Object.entries(result.categories)) {
+        for (const [cat, info] of Object.entries(result.categories)) {
+            const colorHex = info.color_hex || '#8b5cf6';
+            const count = info.count || info;
+            const colorName = info.color_name || '';
+            
             const el = document.createElement('div');
             el.className = 'cat-badge';
+            el.style.background = `${colorHex}15`;
+            el.style.border = `1px solid ${colorHex}40`;
             el.innerHTML = `
-                <div class="cat-count">${count}</div>
-                <div class="cat-name">${cat.replace('_', ' ')}</div>
+                <div class="cat-count" style="color: ${colorHex}">${count}</div>
+                <div class="cat-name" style="color: ${colorHex}">${cat.replace(/_/g, ' ')}</div>
             `;
             categoriesList.appendChild(el);
+        }
+
+        // Populate artwork table
+        artworkBody.innerHTML = '';
+        if (result.entries && result.entries.length > 0) {
+            result.entries.forEach(entry => {
+                const row = document.createElement('tr');
+                const colorHex = entry.color_hex || '#8b5cf6';
+                const statusClass = `status-${entry.status.toLowerCase()}`;
+                
+                row.innerHTML = `
+                    <td><strong>${entry.id}</strong></td>
+                    <td><span class="type-dot" style="background: ${colorHex}"></span>${entry.category.replace(/_/g, ' ')}</td>
+                    <td>${entry.artwork_name || '—'}</td>
+                    <td>${entry.placement || '—'}</td>
+                    <td title="${entry.color}">${truncate(entry.color, 25)}</td>
+                    <td>${entry.size || '—'}</td>
+                    <td>${entry.page || '—'}</td>
+                    <td><span class="status-badge ${statusClass}">${entry.status}</span></td>
+                    <td>
+                        <button class="action-btn approve" onclick="approveArtwork('${entry.id}')" title="Approve">✓</button>
+                        <button class="action-btn reject" onclick="rejectArtwork('${entry.id}')" title="Reject">✗</button>
+                    </td>
+                `;
+                artworkBody.appendChild(row);
+            });
+        }
+
+        // Show vendors
+        if (result.vendors && result.vendors.length > 0) {
+            vendorsSection.style.display = 'block';
+            vendorTags.innerHTML = '';
+            result.vendors.forEach(v => {
+                const tag = document.createElement('span');
+                tag.className = 'vendor-tag';
+                tag.textContent = v;
+                vendorTags.appendChild(tag);
+            });
+        } else {
+            vendorsSection.style.display = 'none';
         }
 
         outputPath.textContent = result.output_dir;
@@ -226,4 +300,55 @@ document.addEventListener('DOMContentLoaded', () => {
         logList.appendChild(li);
         logsContainer.scrollTop = logsContainer.scrollHeight;
     }
+
+    function truncate(text, max) {
+        if (!text) return '—';
+        return text.length > max ? text.substring(0, max) + '...' : text;
+    }
 });
+
+// --- Global approval functions ---
+async function approveArtwork(artworkId) {
+    try {
+        const res = await fetch(`/api/artworks/${artworkId}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Approved' })
+        });
+        if (res.ok) {
+            // Update the badge in the table
+            updateStatusInTable(artworkId, 'Approved');
+        }
+    } catch (err) {
+        console.error('Approval failed:', err);
+    }
+}
+
+async function rejectArtwork(artworkId) {
+    try {
+        const res = await fetch(`/api/artworks/${artworkId}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Rejected' })
+        });
+        if (res.ok) {
+            updateStatusInTable(artworkId, 'Rejected');
+        }
+    } catch (err) {
+        console.error('Rejection failed:', err);
+    }
+}
+
+function updateStatusInTable(artworkId, newStatus) {
+    const rows = document.querySelectorAll('#artworkBody tr');
+    rows.forEach(row => {
+        const idCell = row.querySelector('td:first-child strong');
+        if (idCell && idCell.textContent === artworkId) {
+            const badge = row.querySelector('.status-badge');
+            if (badge) {
+                badge.textContent = newStatus;
+                badge.className = `status-badge status-${newStatus.toLowerCase()}`;
+            }
+        }
+    });
+}

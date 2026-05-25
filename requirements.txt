@@ -8,6 +8,7 @@ google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.0
 google-cloud-vision==3.7.2
 gspread==6.1.2
+gspread-formatting==1.2.0
 
 # OpenAI (GPT-4 Vision)
 openai==1.35.0
@@ -21,5 +22,12 @@ PyYAML==6.0.1
 rich==13.7.1
 click==8.1.7
 
+# Web Dashboard
+flask==3.0.3
+
 # Logging
 loguru==0.7.2
+fpdf2==2.8.7
+
+# Testing
+pytest==8.2.0

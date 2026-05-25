@@ -1,5 +1,6 @@
 """Generate a sample techpack PDF for testing the automation system.
 Uses fpdf2 (pure Python, no DLL issues).
+Updated to match real client techpack format patterns.
 """
 
 from fpdf import FPDF
@@ -33,60 +34,103 @@ def create_test_techpack():
                 pdf.set_font("Helvetica", size=11)
                 pdf.multi_cell(0, 7, line, new_x="LMARGIN", new_y="NEXT")
 
-    # ── Page 1: Cover ──
+    # ── Page 1: Cover / Design Sheet (matches real format) ──
     pdf.add_page()
-    pdf.set_font("Helvetica", style="B", size=36)
+    pdf.set_font("Helvetica", style="B", size=14)
     pdf.set_text_color(30, 30, 30)
-    pdf.ln(30)
-    pdf.cell(0, 20, "TECHPACK", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.set_font("Helvetica", size=16)
-    pdf.ln(10)
-    pdf.cell(0, 10, "Brand: TestBrand", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 10, "Style: SS25-001", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.cell(0, 10, "Season: Spring / Summer 2025", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.set_font("Helvetica", style="I", size=13)
+
+    # Header table-like format (matching SP26KB063 style)
+    headers = [
+        "DEPT: BOYS-KB",
+        "STYLE NO  :TB-SS25-001",
+        "COLLECTION  :MAIN LINE",
+        "BUYER: ZARA",
+        "DESIGNER: AMIT/SARAH",
+        "SEASON:SPRING 26",
+    ]
+    for h in headers:
+        pdf.cell(0, 8, h, new_x="LMARGIN", new_y="NEXT")
+
     pdf.ln(6)
-    pdf.cell(0, 8, "Polo Shirt - Classic Fit", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", style="B", size=18)
+    pdf.cell(0, 12, "DESIGN SHEET", align="C", new_x="LMARGIN", new_y="NEXT")
 
-    # ── Page 2: Front Chest Print ──
-    add_page("ARTWORK: FRONT CHEST PRINT", [
-        "## Artwork Type",
-        "Technique: Screen Print",
-        "Process: DTF (Direct to Film)",
+    pdf.ln(4)
+    pdf.set_font("Helvetica", size=12)
+    design_info = [
+        "STYLE DESCRIPTION",
+        "",
+        "FASHION PRINTED POLO TEE",
+        "",
+        "FABRIC:",
+        "TOP: 95% COTTON 5% ELASTANE, 220 GSM",
+        "BOTTOM: 100% COTTON PIQUE",
+        "",
+        "17-1349 TCX",
+        "EXUBERANCE",
+        "11-0601 TCX",
+        "BRIGHT WHITE",
+        "19-3911 TCX",
+        "BLACK BEAUTY",
+        "",
+        "POLO FIT TO BE FOLLOWED AS SAMPLE",
+        "DATE: 21-05-24",
+    ]
+    for line in design_info:
+        pdf.cell(0, 7, line, new_x="LMARGIN", new_y="NEXT")
+
+    # ── Page 2: Working Sketch / Spec Detail ──
+    add_page("SPEC DETAIL", [
+        "## Construction Details",
+        "BRANDED STRETCH TAPE PATCH AT INNER NECK",
+        "FLOCK PRINT on front panel",
+        "1/8TH WHITE PIPING SILICON BRANDING",
+        "MOON PATCH INSIDE",
+        "1/8\" DN FLATLOCK STITCH",
+        "BRANDING LABEL at hem",
+        "CURVED HEM",
         "--",
-        "## Placement & Dimensions",
-        "Placement: Left Chest",
-        "Dimensions: 8cm x 6cm",
+        "## Artwork Callouts",
+        "PUFFED EMBROIDERY at left chest",
+        "HD PRINT at center back",
+        "HEAT TRANSFER LABEL",
+        "( MAIN LABEL - SIZE/ CONTENT/ WASHCARE)",
         "--",
-        "## Color Specifications",
-        "Colors: Pantone 185C (Red), White",
-        "Number of Colors: 2",
-        "Ink Type: Plastisol / Water-based print",
+        "17-1349 TCX",
+        "EXUBERANCE",
+        "12-4705 TCX",
+        "BLUE BLUSH",
         "--",
-        "## Notes",
-        "Puff print effect on main logo text.",
-        "Foil print on star detail.",
+        "DOUBLE LAYER COLOR NEEDED",
+        "RIB HT 1.2 CM",
+        "11 cm FROM SHOULDER EDGE",
+        "0.8 CM HT TAPE IN FABRIC",
     ])
 
-    # ── Page 3: Back Print ──
-    add_page("ARTWORK: BACK PRINT", [
-        "## Artwork Type",
-        "Technique: Sublimation Print",
-        "Process: Digital Print - Full Color Process",
+    # ── Page 3: Artwork Detail ──
+    add_page("ARTWORK DETAIL", [
+        "## Print Artwork",
+        "TECHNIQUE:SCREEN PRINT AS SAMPLE",
+        "SOLID 2 MM HD PRINT",
+        "FLOCK PRINT on chest",
         "--",
         "## Placement & Dimensions",
-        "Placement: Center Back",
-        "Dimensions: 25cm x 30cm",
+        "PLACEMENT: LEFT CHEST",
+        "WIDTH:3 CM",
+        "HEIGHT:2.7 CM",
+        "11 INCHES WIDTH (back print)",
+        "8 CM WIDTH (sleeve)",
         "--",
-        "## Color Specifications",
-        "Colors: Pantone 2728C (Blue), Pantone 109C (Yellow)",
-        "Full color sublimation - no color restrictions",
+        "## Embroidery",
+        "TECHNIQUE:EMBROIDERY IN COTTON POLY THREAD",
+        "TUFT EMBROIDERY at sleeve",
+        "COLOR FOLLOW AS SAMPLE",
         "--",
-        "## Notes",
-        "Discharge print base required before sublimation.",
+        "PRINT ARTWORK",
+        "BASE FABRIC PRINT COL 2 PRINT COL 1",
     ])
 
-    # ── Page 4: Embroidery ──
+    # ── Page 4: Embroidery Detail ──
     add_page("ARTWORK: SLEEVE EMBROIDERY", [
         "## Artwork Type",
         "Technique: Flat Embroidery",
@@ -94,78 +138,88 @@ def create_test_techpack():
         "--",
         "## Placement & Dimensions",
         "Placement: Right Sleeve",
-        "Dimensions: 5cm x 3cm",
+        "Dimensions: 5 CM x 3 CM",
         "--",
         "## Thread Specifications",
         "Thread: Madeira 1147 (Navy), Madeira 1001 (White)",
         "Stitch Count: approx 8,500 stitches",
         "Backing: Cut-away backing required",
         "--",
-        "## Notes",
+        "17-1349 TCX",
+        "EXUBERANCE",
+        "--",
         "3D puff on lettering only. Flat embroidery on icon.",
         "Embroidered patch sewn onto garment after production.",
     ])
 
-    # ── Page 5: Woven Labels ──
+    # ── Page 5: Labels & Trims ──
     add_page("WOVEN LABEL SPECIFICATIONS", [
         "## Main Label",
         "Type: Damask Woven Label",
-        "Size: 4cm x 2cm",
-        "Placement: Neck Label - Center Back",
+        "Size: 4 CM x 2 CM",
+        "Placement: INNER NECK - Center Back",
         "Colors: Navy + White thread",
         "--",
-        "## Size Label",
-        "Type: Satin Label",
-        "Size: 2cm x 1.5cm",
-        "Placement: Left Side Seam",
+        "## Heat Transfer Label",
+        "HEAT TRANSFER AT INNER YOKE",
+        "SILICON LABEL with 3 mm raised HT",
+        "Stitching depression detail",
+        "4 CM WIDTH",
         "--",
-        "## Care Label",
-        "Type: Printed Taffeta Label",
-        "Content: Standard wash care symbols + fiber content",
-        "Placement: Right Side Seam, below size label",
+        "## Flag Label",
+        "BRANDING LABEL AT HEM",
+        "Satine + Twill Dobby Label",
+        "4 cm X 2.8 cm",
+        "at side seam, 7cm above hem",
         "--",
-        "## Brand Label",
-        "Woven tag attached to hangtag with brand logo",
+        "## Washcare Label",
+        "WASHCARE LABEL",
+        "MATERIAL SATIN",
+        "ADD COUNTRY OF ORIGIN",
+        "INSERT IN SIDE SEAM",
     ])
 
     # ── Page 6: Patches & Badges ──
     add_page("PATCH & BADGE DETAILS", [
-        "## Item 1: Rubber Patch",
-        "Material: Silicone Badge - 3D molded rubber",
+        "## Item 1: Silicone Badge",
+        "Material: SILICONE BADGE - 3D molded rubber",
         "Placement: Left Sleeve",
-        "Dimensions: 4cm x 4cm",
+        "Dimensions: 4 CM x 4 CM",
         "Colors: Navy + White",
         "--",
         "## Item 2: Leather Patch",
         "Material: PU Leather with deboss logo",
         "Placement: Hem - Right Side",
-        "Dimensions: 6cm x 3cm",
+        "Dimensions: 6 CM x 3 CM",
         "Attachment: TPU patch backing, heat seal",
         "--",
-        "## Item 3: Woven Patch",
-        "Chenille patch on left chest (alternate colorway)",
-        "PVC badge option available on request",
+        "## Item 3: Branding Badge",
+        "BRANDING BADGE at outer CB neck",
+        "Poly/elastane with stretch silicon print",
     ])
 
-    # ── Page 7: Packaging ──
-    add_page("PACKAGING ARTWORK", [
-        "## Hangtag",
-        "Size: 8cm x 5cm",
-        "Material: 350gsm card stock",
-        "Print: CMYK + Spot UV coating on logo",
-        "String: White cotton string, 20cm",
-        "--",
-        "## Polybag",
-        "Size: 30cm x 40cm, clear poly",
-        "Sticker: Barcode + style info label",
-        "Fold: Standard retail fold",
-        "--",
-        "## Price Tag",
-        "Attached to hangtag with clear elastic loop",
-        "--",
-        "## Tissue Paper",
-        "Branded tissue, single color print",
-        "Packaging artwork must include recycling symbol",
+    # ── Page 7: BOM (Bill of Materials) ──
+    add_page("BILL OF MATERIALS", [
+        "## Body Fabric",
+        "DESCRIPTION CONTENT/FINISH PLACEMENT CONSUMPTION SOURCE",
+        "Body- 95% Cotton/5% spandex, 220gsm, Bio+Silicon",
+        "Neck rib - 1x1 rib, 95/5 ctn/spdx",
+        "",
+        "## Trims",
+        "Hang tag - 10x6.5 cms, paper 350gsm, UV print",
+        "tbc Avery Dennison",
+        "",
+        "Thread- spun poly 80's TKT, dtm, spi-12",
+        "DTM body all over tbc vardhamann/coats",
+        "",
+        "Mobilon stretch transparent tape 10 mm",
+        "at shoulder seam tbc factory",
+        "",
+        "## Packaging",
+        "Tissue paper packing tbc factory",
+        "BOPP Self seal poly cover transparent 27x32cm packing tbc factory",
+        "Packing tape 4 inch transparent printed factory",
+        "Carton box 5 ply virgin paper factory",
     ])
 
     # ── Page 8: Garment Specs (no artwork keywords — tests 'unclassified') ──
@@ -194,10 +248,18 @@ def create_test_techpack():
     output = "samples/techpack.pdf"
     pdf.output(output)
     print(f"[OK] Test techpack created: {output}")
-    print(f"     Pages: 8 (Cover, 2x Print, Embroidery, Labels, Patches, Packaging, Specs)")
+    print(f"     Pages: 8")
+    print(f"     Page 1: Design Sheet (Style/Buyer/Season/Pantone colors)")
+    print(f"     Page 2: Spec Detail (flock print, embroidery, heat transfer)")
+    print(f"     Page 3: Artwork Detail (screen print, HD print, dimensions)")
+    print(f"     Page 4: Embroidery Detail (3D puff, satin stitch)")
+    print(f"     Page 5: Labels (woven label, heat transfer, washcare)")
+    print(f"     Page 6: Patches/Badges (silicone, leather, branding)")
+    print(f"     Page 7: BOM (Avery Dennison, vardhamann/coats)")
+    print(f"     Page 8: Garment Specs (unclassified)")
     print(f"\nNow run:")
     print(f"  python main.py analyze samples/techpack.pdf")
-    print(f"  python main.py process samples/techpack.pdf -b TestBrand -s SS25-001")
+    print(f"  python main.py process samples/techpack.pdf -b TestBrand -s TB-SS25-001")
 
 
 if __name__ == "__main__":

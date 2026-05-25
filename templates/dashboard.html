@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Techpack Automator</title>
+    <title>Techpack Automator — AI-Powered Artwork Extraction</title>
+    <meta name="description" content="AI-powered techpack artwork extraction, classification, and cataloging system for garment production teams.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -34,7 +35,7 @@
                     
                     <div class="input-group">
                         <label for="style">Style Code</label>
-                        <input type="text" id="style" name="style" placeholder="e.g. SS25-001" required>
+                        <input type="text" id="style" name="style" placeholder="e.g. SS25-001 (auto-detected if blank)">
                     </div>
 
                     <div class="drop-zone" id="dropZone">
@@ -73,6 +74,17 @@
                 </div>
 
                 <div class="results-container" id="resultsContainer" style="display: none;">
+                    <!-- Header Info -->
+                    <div class="header-info" id="headerInfo" style="display: none;">
+                        <h3>📝 Techpack Info</h3>
+                        <div class="info-grid">
+                            <div class="info-item"><span class="info-label">Style</span><span class="info-value" id="infoStyle">—</span></div>
+                            <div class="info-item"><span class="info-label">Buyer</span><span class="info-value" id="infoBuyer">—</span></div>
+                            <div class="info-item"><span class="info-label">Season</span><span class="info-value" id="infoSeason">—</span></div>
+                            <div class="info-item"><span class="info-label">Garment</span><span class="info-value" id="infoGarment">—</span></div>
+                        </div>
+                    </div>
+
                     <h3>Extraction Summary</h3>
                     
                     <div class="stats-grid">
@@ -84,14 +96,49 @@
                             <div class="stat-value" id="statClassified">0</div>
                             <div class="stat-label">Artworks Found</div>
                         </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statImages">0</div>
+                            <div class="stat-label">Images Extracted</div>
+                        </div>
                         <div class="stat-card warning">
                             <div class="stat-value" id="statUnclassified">0</div>
                             <div class="stat-label">Unclassified</div>
                         </div>
                     </div>
 
+                    <!-- Color-coded category cards -->
+                    <h3>📊 Categories</h3>
                     <div class="categories-list" id="categoriesList">
                         <!-- Category cards injected here via JS -->
+                    </div>
+
+                    <!-- Artwork entries table -->
+                    <h3>🎨 Artwork Details</h3>
+                    <div class="artwork-table-container">
+                        <table class="artwork-table" id="artworkTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Placement</th>
+                                    <th>Colors</th>
+                                    <th>Size</th>
+                                    <th>Page</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="artworkBody">
+                                <!-- Rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Vendors -->
+                    <div class="vendors-section" id="vendorsSection" style="display: none;">
+                        <h3>🏭 Vendors Detected</h3>
+                        <div class="vendor-tags" id="vendorTags"></div>
                     </div>
                     
                     <div class="action-bar">

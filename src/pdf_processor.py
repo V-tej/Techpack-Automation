@@ -6,6 +6,8 @@ Handles:
 - Keyword-based artwork type detection
 - Automatic page splitting by artwork category
 - Local folder structure creation
+- Embedded image extraction from PDF pages
+- Header info extraction via TextExtractor integration
 
 Note: Uses pypdf as primary engine (no DLL dependencies).
 PyMuPDF (fitz) used as fallback if available.
@@ -15,7 +17,12 @@ from pathlib import Path
 from loguru import logger
 from dataclasses import dataclass, field
 
-from src.config import ARTWORK_CATEGORIES, OUTPUT_DIR
+from src.config import (
+    ARTWORK_CATEGORIES,
+    OUTPUT_DIR,
+    MIN_IMAGE_WIDTH,
+    MIN_IMAGE_HEIGHT,
+)
 
 
 @dataclass
@@ -28,6 +35,15 @@ class ArtworkDetection:
     confidence: float = 0.0
     text_content: str = ""
     has_images: bool = False
+    # Enhanced fields from TextExtractor
+    techniques: list = field(default_factory=list)
+    placements: list = field(default_factory=list)
+    dimensions: list = field(default_factory=list)
+    pantone_colors: list = field(default_factory=list)
+    vendors: list = field(default_factory=list)
+    artwork_name: str = ""
+    is_bom_page: bool = False
+    is_artwork_page: bool = False
 
 
 @dataclass
@@ -38,17 +54,32 @@ class TechpackResult:
     detections: list = field(default_factory=list)
     unclassified_pages: list = field(default_factory=list)
     output_dir: str = ""
+    # Enhanced fields
+    header_info: object = None
+    extracted_images: list = field(default_factory=list)
+    all_vendors: list = field(default_factory=list)
+    all_colors: list = field(default_factory=list)
 
 
 class PDFProcessor:
     """
     Core PDF processing engine.
     Uses pypdf for text extraction (pure Python, no DLL needed).
+    Integrates TextExtractor for structured metadata extraction.
     """
 
     def __init__(self, keyword_config: dict = None):
         self.categories = keyword_config or ARTWORK_CATEGORIES
+        self._text_extractor = None
         logger.info("PDFProcessor initialized with {} artwork categories", len(self.categories))
+
+    @property
+    def text_extractor(self):
+        """Lazy-load TextExtractor to avoid circular imports."""
+        if self._text_extractor is None:
+            from src.text_extractor import TextExtractor
+            self._text_extractor = TextExtractor()
+        return self._text_extractor
 
     def extract_text(self, pdf_path: str) -> list:
         """Extract text from every page of a PDF using pypdf."""
@@ -102,7 +133,10 @@ class PDFProcessor:
         return detections
 
     def process_techpack(self, pdf_path: str, output_dir: str = None) -> TechpackResult:
-        """Process a complete techpack PDF end-to-end."""
+        """
+        Process a complete techpack PDF end-to-end.
+        Enhanced: extracts header info, metadata per page, and vendors.
+        """
         pdf_path = Path(pdf_path)
         output_dir = Path(output_dir) if output_dir else OUTPUT_DIR / pdf_path.stem
 
@@ -115,6 +149,16 @@ class PDFProcessor:
             output_dir=str(output_dir),
         )
 
+        # Extract header info from Page 1
+        if pages_data:
+            result.header_info = self.text_extractor.extract_header(pages_data[0]["text"])
+            logger.info("Header: Style={}, Buyer={}, Season={}",
+                        result.header_info.style_no, result.header_info.buyer,
+                        result.header_info.season)
+
+        all_vendors = set()
+        all_colors = []
+
         for page_data in pages_data:
             page_num = page_data["page_number"]
             text = page_data["text"]
@@ -124,6 +168,14 @@ class PDFProcessor:
                 result.unclassified_pages.append(page_num)
                 continue
 
+            # Extract metadata from page
+            metadata = self.text_extractor.extract_page_metadata(text)
+
+            # Collect all vendors and colors
+            all_vendors.update(metadata.vendors)
+            all_colors.extend(metadata.pantone_colors)
+
+            # Detect artwork type by keyword
             detections = self.detect_artwork_type(text)
 
             if detections:
@@ -136,20 +188,35 @@ class PDFProcessor:
                     confidence=best["confidence"],
                     text_content=text[:500],
                     has_images=page_data["has_images"],
+                    # Enhanced fields
+                    techniques=metadata.techniques,
+                    placements=metadata.placements,
+                    dimensions=metadata.dimensions,
+                    pantone_colors=metadata.pantone_colors,
+                    vendors=metadata.vendors,
+                    artwork_name=metadata.artwork_name,
+                    is_bom_page=self.text_extractor.is_bom_page(text),
+                    is_artwork_page=self.text_extractor.is_artwork_page(text),
                 )
                 result.detections.append(detection)
                 logger.info(
-                    "Page {} -> {} (confidence: {:.0%}, keywords: {})",
+                    "Page {} -> {} (confidence: {:.0%}, keywords: {}, techniques: {}, placements: {})",
                     page_num, best["category"], best["confidence"],
-                    ", ".join(best["keywords_found"])
+                    ", ".join(best["keywords_found"]),
+                    ", ".join(metadata.techniques[:2]),
+                    ", ".join(metadata.placements[:2]),
                 )
             else:
                 result.unclassified_pages.append(page_num)
                 logger.warning("Page {} - no keyword match, unclassified", page_num)
 
+        result.all_vendors = list(all_vendors)
+        result.all_colors = all_colors
+
         logger.info(
-            "Done: {} pages, {} classified, {} unclassified",
-            result.total_pages, len(result.detections), len(result.unclassified_pages)
+            "Done: {} pages, {} classified, {} unclassified, {} vendors found",
+            result.total_pages, len(result.detections), len(result.unclassified_pages),
+            len(result.all_vendors)
         )
         return result
 
@@ -204,4 +271,76 @@ class PDFProcessor:
             output_files["unclassified"] = str(output_path)
             logger.warning("Unclassified pages: {} -> {}", result.unclassified_pages, output_path.name)
 
+        # Create Mockups folder
+        mockups_dir = output_dir / "Mockups"
+        mockups_dir.mkdir(parents=True, exist_ok=True)
+
         return output_files
+
+    def extract_images(self, pdf_path: str, result: TechpackResult) -> list:
+        """
+        Extract embedded images from PDF pages and save as PNGs.
+        Filters out small icons (< MIN_IMAGE_WIDTH x MIN_IMAGE_HEIGHT).
+        """
+        from pypdf import PdfReader
+
+        pdf_path = Path(pdf_path)
+        output_dir = Path(result.output_dir)
+        extracted = []
+
+        reader = PdfReader(str(pdf_path))
+
+        for detection in result.detections:
+            page_num = detection.page_number
+            page = reader.pages[page_num - 1]
+
+            if not hasattr(page, "images"):
+                continue
+
+            folder_name = self.categories.get(detection.category, {}).get("folder_name", "Unknown")
+            img_dir = output_dir / folder_name / "images"
+            img_dir.mkdir(parents=True, exist_ok=True)
+
+            for img_idx, image in enumerate(page.images):
+                try:
+                    img_data = image.data
+                    img_name = image.name or f"img_{page_num}_{img_idx}"
+
+                    # Determine file extension
+                    if img_name.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.gif')):
+                        ext = Path(img_name).suffix
+                    else:
+                        ext = ".png"
+
+                    # Check image size using Pillow if available
+                    try:
+                        from PIL import Image
+                        import io
+                        img = Image.open(io.BytesIO(img_data))
+                        width, height = img.size
+                        if width < MIN_IMAGE_WIDTH or height < MIN_IMAGE_HEIGHT:
+                            logger.debug("Skipping small image: {}x{} on page {}", width, height, page_num)
+                            continue
+                    except ImportError:
+                        pass  # Pillow not available, skip size check
+
+                    # Save the image
+                    safe_name = f"page{page_num}_artwork_{img_idx}{ext}"
+                    img_path = img_dir / safe_name
+                    with open(img_path, "wb") as f:
+                        f.write(img_data)
+
+                    extracted.append({
+                        "page": page_num,
+                        "category": detection.category,
+                        "path": str(img_path),
+                        "name": safe_name,
+                    })
+                    logger.info("Extracted image: {} (page {})", safe_name, page_num)
+
+                except Exception as e:
+                    logger.warning("Failed to extract image from page {}: {}", page_num, e)
+
+        result.extracted_images = extracted
+        logger.info("Extracted {} artwork images total", len(extracted))
+        return extracted
