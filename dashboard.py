@@ -50,7 +50,9 @@ def run_pipeline(job_id: str, pdf_path: str, brand: str, style: str):
     job["logs"] = []
 
     def log(msg):
+        from loguru import logger
         job["logs"].append({"time": datetime.now().strftime("%H:%M:%S"), "msg": msg})
+        logger.info(f"[{job_id}] {msg}")
 
     try:
         log("Starting PDF processing...")
@@ -122,6 +124,66 @@ def run_pipeline(job_id: str, pdf_path: str, brand: str, style: str):
         report_path = Path(result.output_dir) / "ARTWORK_SUMMARY.md"
         ReportGenerator().generate_summary(entries, str(report_path), header_info=header)
 
+        # ── Phase 4: Google Drive Upload ──
+        try:
+            log("Uploading files to Google Drive...")
+            from src.drive_manager import DriveManager
+            drive = DriveManager()
+            folder_ids = drive.create_structure(f"{brand}_{style_used}")
+            uploaded = drive.upload_results(str(result.output_dir), folder_ids)
+
+            # Update entries with Drive links
+            for entry in entries:
+                for path, info in uploaded.items():
+                    if entry.artwork_type in path.lower() or \
+                       ARTWORK_CATEGORIES.get(entry.artwork_type, {}).get("folder_name", "") in path:
+                        ext = Path(path).suffix.lower()
+                        link = info.get("link", "")
+                        if ext == ".png":
+                            entry.png_link = link
+                        elif ext == ".pdf":
+                            entry.pdf_link = link
+            log("Google Drive upload completed successfully.")
+        except Exception as drive_err:
+            log(f"Warning: Google Drive upload skipped/failed: {drive_err}")
+
+        # ── Phase 5: Update Google Sheets ──
+        try:
+            log("Updating Google Sheets database...")
+            from src.naming_engine import SheetsDatabase
+            db = SheetsDatabase()
+
+            # Add artwork entries
+            db.add_artworks_batch(entries)
+
+            # Add vendors discovered from BOM pages
+            if result.all_vendors:
+                vendor_entries = []
+                for v in result.all_vendors:
+                    vendor_entries.append(VendorEntry(vendor_name=v))
+                db.add_vendors_batch(vendor_entries)
+
+            # Log the upload
+            db.log_upload(UploadLogEntry(
+                style_no=style_used,
+                uploaded_by="Dashboard",
+                status="Success",
+            ))
+
+            # Create approval records
+            approval_entries = []
+            for entry in entries:
+                approval_entries.append(ApprovalEntry(
+                    style=style_used,
+                    artwork=entry.artwork_id,
+                    buyer_approval="Pending",
+                    vendor_approval="Pending",
+                ))
+            db.add_approvals_batch(approval_entries)
+            log("Google Sheets database updated successfully.")
+        except Exception as sheet_err:
+            log(f"Warning: Google Sheets update failed: {sheet_err}")
+
         # Build category summary with colors
         category_counts = {}
         for det in result.detections:
@@ -169,6 +231,8 @@ def run_pipeline(job_id: str, pdf_path: str, brand: str, style: str):
                     "file": e.file_name,
                     "date": e.date_added,
                     "color_hex": CATEGORY_COLORS.get(e.artwork_type, {}).get("hex", "#6B7280"),
+                    "png_link": getattr(e, "png_link", ""),
+                    "pdf_link": getattr(e, "pdf_link", ""),
                 }
                 for e in entries
             ],
@@ -392,6 +456,6 @@ def get_artworks():
 if __name__ == "__main__":
     print("\n" + "=" * 50)
     print("  Techpack Artwork Automation Dashboard")
-    print("  Open your browser: http://localhost:5000")
+    print("  Open your browser: http://localhost:5001")
     print("=" * 50 + "\n")
-    app.run(host="0.0.0.0", debug=True, port=5000, use_reloader=False)
+    app.run(host="0.0.0.0", debug=True, port=5001, use_reloader=False)
