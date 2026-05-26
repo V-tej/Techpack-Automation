@@ -33,5 +33,5 @@ COPY . .
 # Expose the port the app runs on
 EXPOSE 5001
 
-# Command to run the application (dashboard by default)
-CMD ["python", "dashboard.py"]
+# Command to run the application via Gunicorn (with 1 worker to ensure single FIFO queue)
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 1 --threads 4 --timeout 120 dashboard:app"]

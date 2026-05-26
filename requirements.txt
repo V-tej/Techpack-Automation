@@ -24,6 +24,7 @@ click==8.1.7
 
 # Web Dashboard
 flask==3.0.3
+gunicorn==22.0.0
 
 # Logging
 loguru==0.7.2

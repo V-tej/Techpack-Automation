@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Optional
 from loguru import logger
 from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -22,6 +23,7 @@ from src.config import (
     GOOGLE_SCOPES,
     ARTWORK_CATEGORIES,
     DRIVE_FOLDERS,
+    CREDENTIALS_DIR,
 )
 
 
@@ -35,9 +37,17 @@ class DriveManager:
         self._auth()
 
     def _auth(self):
-        creds = service_account.Credentials.from_service_account_file(self.sa_file, scopes=GOOGLE_SCOPES)
+        token_path = CREDENTIALS_DIR / "token.json"
+        if token_path.exists():
+            # Filter out cloud-vision scope as it is invalid for personal user tokens
+            user_scopes = [s for s in GOOGLE_SCOPES if "cloud-vision" not in s]
+            creds = Credentials.from_authorized_user_file(str(token_path), user_scopes)
+            logger.info("Drive authenticated using personal OAuth user token (token.json)")
+        else:
+            creds = service_account.Credentials.from_service_account_file(self.sa_file, scopes=GOOGLE_SCOPES)
+            logger.info("Drive authenticated using Service Account")
+            
         self.service = build("drive", "v3", credentials=creds)
-        logger.info("Drive authenticated")
 
     def create_folder(self, name: str, parent_id: str = None) -> str:
         """Create a folder in Google Drive, returning its ID. Skips if already exists."""

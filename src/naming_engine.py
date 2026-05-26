@@ -19,6 +19,7 @@ from datetime import datetime
 
 import gspread
 from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 
 from src.config import (
     GOOGLE_SERVICE_ACCOUNT_FILE,
@@ -31,6 +32,7 @@ from src.config import (
     CATEGORY_COLORS,
     APPROVAL_STATUSES,
     VERSION_STATES,
+    CREDENTIALS_DIR,
 )
 
 
@@ -194,9 +196,19 @@ class SheetsDatabase:
 
     def __init__(self, sheet_id: str = None):
         self.sheet_id = sheet_id or GOOGLE_SHEETS_ID
-        creds = service_account.Credentials.from_service_account_file(
-            GOOGLE_SERVICE_ACCOUNT_FILE, scopes=GOOGLE_SCOPES
-        )
+        
+        token_path = CREDENTIALS_DIR / "token.json"
+        if token_path.exists():
+            # Filter out cloud-vision scope as it is invalid for personal user tokens
+            user_scopes = [s for s in GOOGLE_SCOPES if "cloud-vision" not in s]
+            creds = Credentials.from_authorized_user_file(str(token_path), user_scopes)
+            logger.info("Sheets authenticated using personal OAuth user token (token.json)")
+        else:
+            creds = service_account.Credentials.from_service_account_file(
+                GOOGLE_SERVICE_ACCOUNT_FILE, scopes=GOOGLE_SCOPES
+            )
+            logger.info("Sheets authenticated using Service Account")
+            
         self.gc = gspread.authorize(creds)
         self.spreadsheet = None
         self.sheets = {}

@@ -22,5 +22,9 @@ uploads/
 .DS_Store
 Thumbs.db
 
+# Executables & Local Tools
+ngrok*
+*.exe
+
 # Test samples
 samples/

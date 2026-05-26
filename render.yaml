@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: techpack-artwork-automator
+    runtime: docker
+    plan: free
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false  # User provides their OpenAI API key in the Render Dashboard
+      - key: SERVICE_ACCOUNT_JSON_B64
+        sync: false  # Base64 string of service_account.json for Google APIs

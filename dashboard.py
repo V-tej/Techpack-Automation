@@ -17,6 +17,7 @@ Then open: http://localhost:5000
 import os
 import sys
 import json
+import queue
 import shutil
 import threading
 from pathlib import Path
@@ -32,6 +33,10 @@ from src.naming_engine import (
     NamingEngine, ArtworkEntry, ReportGenerator,
     VendorEntry, UploadLogEntry, ApprovalEntry,
 )
+from src.credentials_helper import init_credentials
+
+# Initialize dynamic Base64 credentials for Google Drive & Sheets APIs on startup
+init_credentials()
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100MB max upload
@@ -41,6 +46,11 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 # In-memory job store (simple, no DB needed)
 jobs = {}
+
+# Thread-safe sequential processing queue & locks
+job_queue = queue.Queue()
+active_job_id = None
+active_job_lock = threading.Lock()
 
 
 def run_pipeline(job_id: str, pdf_path: str, brand: str, style: str):
@@ -245,6 +255,43 @@ def run_pipeline(job_id: str, pdf_path: str, brand: str, style: str):
         log(f"Error: {e}")
 
 
+def worker():
+    """Persistent background worker thread that processes jobs sequentially."""
+    global active_job_id
+    from loguru import logger
+    logger.info("Sequential Queue Worker Thread started successfully.")
+    
+    while True:
+        try:
+            # Blocks until a job is available
+            job_data = job_queue.get()
+            if job_data is None:
+                # Poison pill to stop the thread
+                break
+                
+            job_id, pdf_path, brand, style = job_data
+            
+            with active_job_lock:
+                active_job_id = job_id
+                
+            logger.info(f"Worker picked up job {job_id}. Starting processing...")
+            
+            # Run the actual pipeline
+            run_pipeline(job_id, pdf_path, brand, style)
+            
+        except Exception as e:
+            logger.error(f"Error in sequential worker thread: {e}")
+        finally:
+            with active_job_lock:
+                active_job_id = None
+            job_queue.task_done()
+
+
+# Start the sequential background worker thread
+worker_thread = threading.Thread(target=worker, daemon=True)
+worker_thread.start()
+
+
 # ── Page Routes ─────────────────────────────────────────────
 
 @app.route("/")
@@ -284,13 +331,14 @@ def upload():
         "created": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
-    # Run in background thread
-    thread = threading.Thread(
-        target=run_pipeline,
-        args=(job_id, str(upload_path), brand, style),
-        daemon=True
-    )
-    thread.start()
+    # Append initial queue status log
+    jobs[job_id]["logs"].append({
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "msg": "Added to sequential processing queue. Waiting for prior uploads to finish..."
+    })
+
+    # Add to sequential processing queue
+    job_queue.put((job_id, str(upload_path), brand, style))
 
     return jsonify({"job_id": job_id})
 
@@ -307,6 +355,36 @@ def get_job(job_id):
 @app.route("/api/jobs")
 def list_jobs():
     return jsonify(list(reversed(list(jobs.values()))))
+
+
+@app.route("/api/queue")
+def get_queue_status():
+    """
+    Returns the status of the processing queue:
+    - active_job: the ID of the job currently processing
+    - queue_length: number of jobs waiting in the queue
+    - position: if job_id is provided, returns its position in the queue (1-indexed, 0 if active, -1 if not found)
+    """
+    target_job_id = request.args.get("job_id")
+    
+    with active_job_lock:
+        current_active = active_job_id
+        
+    queued_jobs = [item[0] for item in list(job_queue.queue)]
+    
+    position = -1
+    if target_job_id:
+        if target_job_id == current_active:
+            position = 0
+        elif target_job_id in queued_jobs:
+            position = queued_jobs.index(target_job_id) + 1
+            
+    return jsonify({
+        "active_job": current_active,
+        "queue_length": len(queued_jobs),
+        "queue": queued_jobs,
+        "position": position
+    })
 
 
 # ── Categories ──────────────────────────────────────────────
@@ -367,12 +445,14 @@ def webhook_process():
         "source": "webhook",
     }
 
-    thread = threading.Thread(
-        target=run_pipeline,
-        args=(job_id, pdf_path, brand, style),
-        daemon=True,
-    )
-    thread.start()
+    # Append initial queue status log
+    jobs[job_id]["logs"].append({
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "msg": "Webhook job added to sequential processing queue. Waiting for prior uploads to finish..."
+    })
+
+    # Add to sequential processing queue
+    job_queue.put((job_id, pdf_path, brand, style))
 
     return jsonify({"job_id": job_id, "status": "queued"})
 
