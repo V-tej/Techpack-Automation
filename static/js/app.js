@@ -287,7 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
             vendorsSection.style.display = 'none';
         }
 
-        outputPath.textContent = result.output_dir;
+        if (outputPath) {
+            outputPath.textContent = result.output_dir;
+        }
 
         // Show Drive link button if available
         const driveLinkBtn = document.getElementById('driveLinkBtn');
