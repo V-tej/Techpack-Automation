@@ -148,6 +148,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (contentType && contentType.includes('application/json')) {
                 const data = await response.json();
                 if (response.ok) {
+                    // Store the job ID in localStorage to track that this browser submitted it
+                    try {
+                        let myJobs = JSON.parse(localStorage.getItem('my_jobs') || '[]');
+                        myJobs.push(data.job_id);
+                        localStorage.setItem('my_jobs', JSON.stringify(myJobs));
+                    } catch (e) {
+                        console.error("localStorage error:", e);
+                    }
                     pollJobStatus(data.job_id);
                 } else {
                     handleError(data.error || 'Upload failed');
@@ -314,26 +322,30 @@ document.addEventListener('DOMContentLoaded', () => {
             if (jobsList && jobsList.length > 0) {
                 const latestJob = jobsList[0]; // Since reversed in list_jobs, latest is first
                 if (latestJob.status === 'queued' || latestJob.status === 'processing') {
-                    console.log("Found active/queued job on load, reconnecting:", latestJob.id);
-                    
-                    // UI updates to show processing
-                    submitBtn.disabled = true;
-                    btnText.textContent = 'Processing...';
-                    btnSpinner.style.display = 'block';
-                    
-                    // Set correct badge style
-                    statusBadge.textContent = latestJob.status === 'queued' ? 'Queued' : 'Processing';
-                    statusBadge.className = `badge badge-${latestJob.status}`;
-                    resultsContainer.style.display = 'none';
-                    
-                    logList.innerHTML = '';
-                    logsEmpty.style.display = 'none';
-                    
-                    // Pre-fill inputs if available
-                    brandInput.value = latestJob.brand || 'BRAND';
-                    styleInput.value = latestJob.style || 'STYLE';
-                    
-                    pollJobStatus(latestJob.id);
+                    // Only auto-reconnect if this specific browser session submitted the job
+                    let myJobs = JSON.parse(localStorage.getItem('my_jobs') || '[]');
+                    if (myJobs.includes(latestJob.id)) {
+                        console.log("Found active/queued job on load, reconnecting:", latestJob.id);
+                        
+                        // UI updates to show processing
+                        submitBtn.disabled = true;
+                        btnText.textContent = 'Processing...';
+                        btnSpinner.style.display = 'block';
+                        
+                        // Set correct badge style
+                        statusBadge.textContent = latestJob.status === 'queued' ? 'Queued' : 'Processing';
+                        statusBadge.className = `badge badge-${latestJob.status}`;
+                        resultsContainer.style.display = 'none';
+                        
+                        logList.innerHTML = '';
+                        logsEmpty.style.display = 'none';
+                        
+                        // Pre-fill inputs if available
+                        brandInput.value = latestJob.brand || 'BRAND';
+                        styleInput.value = latestJob.style || 'STYLE';
+                        
+                        pollJobStatus(latestJob.id);
+                    }
                 }
             }
         } catch (error) {
