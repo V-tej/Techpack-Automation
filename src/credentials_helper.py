@@ -1,6 +1,7 @@
 import os
 import base64
 from pathlib import Path
+# pyrefly: ignore [missing-import]
 from loguru import logger
 
 def init_credentials():
