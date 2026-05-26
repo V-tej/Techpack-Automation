@@ -305,6 +305,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!text) return '—';
         return text.length > max ? text.substring(0, max) + '...' : text;
     }
+
+    // --- Auto-Reconnect to Active/Queued Jobs on Page Load ---
+    async function checkActiveJobs() {
+        try {
+            const response = await fetch('/api/jobs');
+            const jobsList = await response.json();
+            if (jobsList && jobsList.length > 0) {
+                const latestJob = jobsList[0]; // Since reversed in list_jobs, latest is first
+                if (latestJob.status === 'queued' || latestJob.status === 'processing') {
+                    console.log("Found active/queued job on load, reconnecting:", latestJob.id);
+                    
+                    // UI updates to show processing
+                    submitBtn.disabled = true;
+                    btnText.textContent = 'Processing...';
+                    btnSpinner.style.display = 'block';
+                    
+                    // Set correct badge style
+                    statusBadge.textContent = latestJob.status === 'queued' ? 'Queued' : 'Processing';
+                    statusBadge.className = `badge badge-${latestJob.status}`;
+                    resultsContainer.style.display = 'none';
+                    
+                    logList.innerHTML = '';
+                    logsEmpty.style.display = 'none';
+                    
+                    // Pre-fill inputs if available
+                    brandInput.value = latestJob.brand || 'BRAND';
+                    styleInput.value = latestJob.style || 'STYLE';
+                    
+                    pollJobStatus(latestJob.id);
+                }
+            }
+        } catch (error) {
+            console.error("Error checking active jobs:", error);
+        }
+    }
+
+    // Start auto-reconnect check on startup
+    checkActiveJobs();
 });
 
 // --- Global approval functions ---
