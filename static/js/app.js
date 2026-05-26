@@ -289,6 +289,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         outputPath.textContent = result.output_dir;
 
+        // Show Drive link button if available
+        const driveLinkBtn = document.getElementById('driveLinkBtn');
+        if (driveLinkBtn) {
+            if (result.drive_link) {
+                driveLinkBtn.href = result.drive_link;
+                driveLinkBtn.style.display = 'inline-flex';
+            } else {
+                driveLinkBtn.style.display = 'none';
+            }
+        }
+
         // Show results with animation
         resultsContainer.style.display = 'block';
         resultsContainer.style.animation = 'fadeIn 0.5s ease';

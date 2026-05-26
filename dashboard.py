@@ -207,6 +207,7 @@ def run_pipeline(job_id: str, pdf_path: str, brand: str, style: str):
             "unclassified": len(result.unclassified_pages),
             "unclassified_pages": result.unclassified_pages,
             "output_dir": result.output_dir,
+            "drive_link": f"https://drive.google.com/drive/folders/{folder_ids['root']}" if ('folder_ids' in locals() and folder_ids and folder_ids.get('root')) else "",
             "images_extracted": len(extracted_images),
             "vendors": result.all_vendors,
             "header": {
