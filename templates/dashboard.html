@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Techpack Automator — AI-Powered Artwork Extraction</title>
-    <meta name="description" content="AI-powered techpack artwork extraction, classification, and cataloging system for garment production teams.">
+    <meta name="description"
+        content="AI-powered techpack artwork extraction, classification, and cataloging system for garment production teams.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
+
 <body>
     <div class="bg-animated"></div>
-    
+
     <div class="container">
         <header class="header">
             <div class="logo">
@@ -26,13 +29,13 @@
             <!-- Upload Section -->
             <section class="glass-panel upload-section">
                 <h2>New Processing Job</h2>
-                
+
                 <form id="uploadForm">
                     <div class="input-group">
                         <label for="brand">Brand Name</label>
                         <input type="text" id="brand" name="brand" placeholder="e.g. NIKE" required>
                     </div>
-                    
+
                     <div class="input-group">
                         <label for="style">Style Code</label>
                         <input type="text" id="style" name="style" placeholder="e.g. SS25-001 (auto-detected if blank)">
@@ -43,7 +46,8 @@
                             <span class="drop-icon">📄</span>
                             <p>Drag & Drop Techpack PDF</p>
                             <span class="or">or</span>
-                            <button type="button" class="btn-secondary" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+                            <button type="button" class="btn-secondary"
+                                onclick="document.getElementById('fileInput').click()">Browse Files</button>
                             <input type="file" id="fileInput" name="file" accept=".pdf" hidden required>
                         </div>
                         <div class="file-info" id="fileInfo" style="display: none;">
@@ -78,15 +82,19 @@
                     <div class="header-info" id="headerInfo" style="display: none;">
                         <h3>📝 Techpack Info</h3>
                         <div class="info-grid">
-                            <div class="info-item"><span class="info-label">Style</span><span class="info-value" id="infoStyle">—</span></div>
-                            <div class="info-item"><span class="info-label">Buyer</span><span class="info-value" id="infoBuyer">—</span></div>
-                            <div class="info-item"><span class="info-label">Season</span><span class="info-value" id="infoSeason">—</span></div>
-                            <div class="info-item"><span class="info-label">Garment</span><span class="info-value" id="infoGarment">—</span></div>
+                            <div class="info-item"><span class="info-label">Style</span><span class="info-value"
+                                    id="infoStyle">—</span></div>
+                            <div class="info-item"><span class="info-label">Buyer</span><span class="info-value"
+                                    id="infoBuyer">—</span></div>
+                            <div class="info-item"><span class="info-label">Season</span><span class="info-value"
+                                    id="infoSeason">—</span></div>
+                            <div class="info-item"><span class="info-label">Garment</span><span class="info-value"
+                                    id="infoGarment">—</span></div>
                         </div>
                     </div>
 
                     <h3>Extraction Summary</h3>
-                    
+
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-value" id="statPages">0</div>
@@ -140,7 +148,7 @@
                         <h3>🏭 Vendors Detected</h3>
                         <div class="vendor-tags" id="vendorTags"></div>
                     </div>
-                    
+
                     <div class="action-bar">
                         <p class="output-path">Output: <span id="outputPath">...</span></p>
                     </div>
@@ -151,4 +159,5 @@
 
     <script src="/static/js/app.js"></script>
 </body>
+
 </html>

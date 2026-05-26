@@ -357,36 +357,6 @@ def list_jobs():
     return jsonify(list(reversed(list(jobs.values()))))
 
 
-@app.route("/api/queue")
-def get_queue_status():
-    """
-    Returns the status of the processing queue:
-    - active_job: the ID of the job currently processing
-    - queue_length: number of jobs waiting in the queue
-    - position: if job_id is provided, returns its position in the queue (1-indexed, 0 if active, -1 if not found)
-    """
-    target_job_id = request.args.get("job_id")
-    
-    with active_job_lock:
-        current_active = active_job_id
-        
-    queued_jobs = [item[0] for item in list(job_queue.queue)]
-    
-    position = -1
-    if target_job_id:
-        if target_job_id == current_active:
-            position = 0
-        elif target_job_id in queued_jobs:
-            position = queued_jobs.index(target_job_id) + 1
-            
-    return jsonify({
-        "active_job": current_active,
-        "queue_length": len(queued_jobs),
-        "queue": queued_jobs,
-        "position": position
-    })
-
-
 # ── Categories ──────────────────────────────────────────────
 
 @app.route("/api/categories")

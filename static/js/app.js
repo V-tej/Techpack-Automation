@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadForm = document.getElementById('uploadForm');
     const brandInput = document.getElementById('brand');
     const styleInput = document.getElementById('style');
-    
+
     // Status elements
     const statusBadge = document.getElementById('statusBadge');
     const logsContainer = document.getElementById('logsContainer');
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const logsEmpty = document.getElementById('logsEmpty');
     const btnSpinner = document.getElementById('btnSpinner');
     const btnText = submitBtn.querySelector('span');
-    
+
     // Results elements
     const resultsContainer = document.getElementById('resultsContainer');
     const statPages = document.getElementById('statPages');
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         handleFiles(files);
     });
 
-    fileInput.addEventListener('change', function() {
+    fileInput.addEventListener('change', function () {
         handleFiles(this.files);
     });
 
@@ -78,9 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             currentFile = file;
-            
+
             // Auto-fill brand if empty
-            if(!brandInput.value) brandInput.value = "BRAND";
+            if (!brandInput.value) brandInput.value = "BRAND";
 
             dropContent.style.display = 'none';
             fileInfo.style.display = 'flex';
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Form Submission ---
     uploadForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         if (!currentFile) return;
 
         // UI updates for processing
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusBadge.textContent = 'Processing';
         statusBadge.className = 'badge badge-processing';
         resultsContainer.style.display = 'none';
-        
+
         logList.innerHTML = '';
         logsEmpty.style.display = 'none';
 
@@ -200,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.disabled = false;
         btnText.textContent = 'Process Another';
         btnSpinner.style.display = 'none';
-        
+
         statusBadge.textContent = 'Complete';
         statusBadge.className = 'badge badge-done';
 
@@ -220,14 +220,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             headerInfo.style.display = 'none';
         }
-        
+
         // Update categories grid — COLOR CODED
         categoriesList.innerHTML = '';
         for (const [cat, info] of Object.entries(result.categories)) {
             const colorHex = info.color_hex || '#8b5cf6';
             const count = info.count || info;
             const colorName = info.color_name || '';
-            
+
             const el = document.createElement('div');
             el.className = 'cat-badge';
             el.style.background = `${colorHex}15`;
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const row = document.createElement('tr');
                 const colorHex = entry.color_hex || '#8b5cf6';
                 const statusClass = `status-${entry.status.toLowerCase()}`;
-                
+
                 row.innerHTML = `
                     <td><strong>${entry.id}</strong></td>
                     <td><span class="type-dot" style="background: ${colorHex}"></span>${entry.category.replace(/_/g, ' ')}</td>
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         outputPath.textContent = result.output_dir;
-        
+
         // Show results with animation
         resultsContainer.style.display = 'block';
         resultsContainer.style.animation = 'fadeIn 0.5s ease';
@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.disabled = false;
         btnText.textContent = 'Try Again';
         btnSpinner.style.display = 'none';
-        
+
         statusBadge.textContent = 'Error';
         statusBadge.className = 'badge badge-error';
 
