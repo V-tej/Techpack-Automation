@@ -41,9 +41,9 @@ GOOGLE_SCOPES = [
 ]
 
 # ============================================
-# OPENAI
+# GEMINI (Google AI Studio)
 # ============================================
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # ============================================
 # PROCESSING SETTINGS
@@ -57,10 +57,11 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 ARTWORK_CATEGORIES = {
     "print": {
         "keywords": [
-            "print", "screen print", "dtf", "sublimation", "digital print",
+            "screen print", "dtf", "sublimation", "digital print",
             "discharge print", "pigment print", "heat transfer print",
             "plastisol", "water-based print", "foil print", "flock print",
             "puff print", "hd print", "print artwork", "solid 2 mm hd print",
+            "artwork detail",
         ],
         "code_prefix": "ART",
         "folder_name": "Prints",
@@ -71,8 +72,8 @@ ARTWORK_CATEGORIES = {
         "keywords": [
             "embroidery", "embroidered", "3d puff", "flat embroidery",
             "chain stitch", "satin stitch", "cross stitch", "applique",
-            "emb", "embr", "puffed embroidery", "tuft embroidery",
-            "cotton poly thread",
+            "puffed embroidery", "tuft embroidery", "cotton poly thread",
+            "emb patch", "embroidery artwork",
         ],
         "code_prefix": "EMB",
         "folder_name": "Embroidery",
@@ -95,7 +96,7 @@ ARTWORK_CATEGORIES = {
     "heat_transfer": {
         "keywords": [
             "heat transfer", "silicone transfer", "reflective transfer",
-            "vinyl transfer", "ht", "htv", "heat seal",
+            "vinyl transfer", "htv", "heat seal",
             "heat transfer label", "heat transfer at inner",
             "ht tape", "silicon print",
         ],

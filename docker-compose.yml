@@ -7,6 +7,8 @@ services:
     volumes:
       - .:/app
       - /app/venv  # Prevent local venv from overwriting container's dependencies
+    env_file:
+      - .env
     environment:
       - FLASK_ENV=development
       - PYTHONUNBUFFERED=1

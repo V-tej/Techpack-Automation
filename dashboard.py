@@ -87,6 +87,50 @@ def run_pipeline(job_id: str, pdf_path: str, brand: str, style: str):
         if result.all_vendors:
             log(f"Vendors found: {', '.join(result.all_vendors)}")
 
+        # ── Phase 2: Gemini AI for unclassified / image-only pages ──
+        if result.unclassified_pages:
+            log(f"Running Gemini AI on {len(result.unclassified_pages)} unclassified pages...")
+            try:
+                from src.ai_detector import AIClassifier
+                ai = AIClassifier()
+                reclassified = []
+                for page_num in result.unclassified_pages[:]:
+                    try:
+                        ai_result = ai.classify_pdf_page(pdf_path, page_num)
+                        category = ai_result.get("category", "unclassified")
+                        confidence = ai_result.get("confidence", 0.0)
+                        if category != "unclassified" and confidence >= 0.4:
+                            from src.pdf_processor import ArtworkDetection
+                            from src.config import ARTWORK_CATEGORIES
+                            cat_info = ARTWORK_CATEGORIES.get(category, {})
+                            detection = ArtworkDetection(
+                                page_number=page_num,
+                                category=category,
+                                code_prefix=cat_info.get("code_prefix", "ART"),
+                                keywords_found=[],
+                                confidence=confidence,
+                                text_content=f"Gemini: {ai_result.get('technique', '')}",
+                                has_images=True,
+                                techniques=[ai_result.get("technique", "")] if ai_result.get("technique") else [],
+                                placements=[ai_result.get("placement", "")] if ai_result.get("placement") else [],
+                                dimensions=[],
+                                pantone_colors=[],
+                                vendors=[],
+                                artwork_name=ai_result.get("technique", ""),
+                            )
+                            result.detections.append(detection)
+                            reclassified.append(page_num)
+                            log(f"  Gemini: Page {page_num} -> {category} ({confidence:.0%})")
+                        else:
+                            log(f"  Gemini: Page {page_num} -> unclassified (low confidence)")
+                    except Exception as page_err:
+                        log(f"  Gemini: Page {page_num} failed: {page_err}")
+                # Remove reclassified pages from unclassified list
+                result.unclassified_pages = [p for p in result.unclassified_pages if p not in reclassified]
+                log(f"Gemini reclassified {len(reclassified)} pages. Still unclassified: {len(result.unclassified_pages)}")
+            except Exception as ai_err:
+                log(f"Warning: Gemini AI step failed: {ai_err}")
+
         log("Splitting PDF into category folders...")
         output_files = processor.split_pdf(pdf_path, result)
 
@@ -107,6 +151,14 @@ def run_pipeline(job_id: str, pdf_path: str, brand: str, style: str):
                 for c in det.pantone_colors
             ) if det.pantone_colors else ""
 
+            # Determine detection method
+            if det.keywords_found:
+                det_method = "keyword"
+            elif "Gemini" in (det.text_content or ""):
+                det_method = "gemini"
+            else:
+                det_method = "keyword"
+
             entry = ArtworkEntry(
                 artwork_id=art_id,
                 style_no=style_used,
@@ -125,7 +177,7 @@ def run_pipeline(job_id: str, pdf_path: str, brand: str, style: str):
                 techpack_page=det.page_number,
                 notes=", ".join(det.techniques) if det.techniques else "",
                 confidence=det.confidence,
-                detection_method="keyword",
+                detection_method=det_method,
                 date_added=datetime.now().strftime("%Y-%m-%d %H:%M"),
             )
             entries.append(entry)

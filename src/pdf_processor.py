@@ -180,32 +180,41 @@ class PDFProcessor:
 
             if detections:
                 best = detections[0]
-                detection = ArtworkDetection(
-                    page_number=page_num,
-                    category=best["category"],
-                    code_prefix=best["code_prefix"],
-                    keywords_found=best["keywords_found"],
-                    confidence=best["confidence"],
-                    text_content=text[:500],
-                    has_images=page_data["has_images"],
-                    # Enhanced fields
-                    techniques=metadata.techniques,
-                    placements=metadata.placements,
-                    dimensions=metadata.dimensions,
-                    pantone_colors=metadata.pantone_colors,
-                    vendors=metadata.vendors,
-                    artwork_name=metadata.artwork_name,
-                    is_bom_page=self.text_extractor.is_bom_page(text),
-                    is_artwork_page=self.text_extractor.is_artwork_page(text),
-                )
-                result.detections.append(detection)
-                logger.info(
-                    "Page {} -> {} (confidence: {:.0%}, keywords: {}, techniques: {}, placements: {})",
-                    page_num, best["category"], best["confidence"],
-                    ", ".join(best["keywords_found"]),
-                    ", ".join(metadata.techniques[:2]),
-                    ", ".join(metadata.placements[:2]),
-                )
+                # Require at least 20% confidence to avoid single-keyword false positives
+                # e.g. 'ht' in style code 'HD-SS-WT-07' giving 14% for heat_transfer
+                if best["confidence"] < 0.20:
+                    result.unclassified_pages.append(page_num)
+                    logger.warning(
+                        "Page {} - low confidence {:.0%} for '{}', sending to AI",
+                        page_num, best["confidence"], best["category"]
+                    )
+                else:
+                    detection = ArtworkDetection(
+                        page_number=page_num,
+                        category=best["category"],
+                        code_prefix=best["code_prefix"],
+                        keywords_found=best["keywords_found"],
+                        confidence=best["confidence"],
+                        text_content=text[:500],
+                        has_images=page_data["has_images"],
+                        # Enhanced fields
+                        techniques=metadata.techniques,
+                        placements=metadata.placements,
+                        dimensions=metadata.dimensions,
+                        pantone_colors=metadata.pantone_colors,
+                        vendors=metadata.vendors,
+                        artwork_name=metadata.artwork_name,
+                        is_bom_page=self.text_extractor.is_bom_page(text),
+                        is_artwork_page=self.text_extractor.is_artwork_page(text),
+                    )
+                    result.detections.append(detection)
+                    logger.info(
+                        "Page {} -> {} (confidence: {:.0%}, keywords: {}, techniques: {}, placements: {})",
+                        page_num, best["category"], best["confidence"],
+                        ", ".join(best["keywords_found"]),
+                        ", ".join(metadata.techniques[:2]),
+                        ", ".join(metadata.placements[:2]),
+                    )
             else:
                 result.unclassified_pages.append(page_num)
                 logger.warning("Page {} - no keyword match, unclassified", page_num)
